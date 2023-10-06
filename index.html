@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Real-time Translation Chat</title>
+</head>
+<body>
+  <h1>Real-time Translation Chat</h1>
+  
+  <h2>User:</h2>
+  <select id="user-select">
+    <option value="US">US (English)</option>
+    <option value="ESP">Spanish (ESP)</option>
+  </select>
+
+  <h2>Messages:</h2>
+  <ul id="message-list"></ul>
+
+  <input type="text" id="message-input" placeholder="Type your message..." />
+  <button id="send-button">Send</button>
+
+  <script>
+    const userSelect = document.getElementById('user-select');
+    const messageList = document.getElementById('message-list');
+    const messageInput = document.getElementById('message-input');
+    const sendButton = document.getElementById('send-button');
+    const user = userSelect.value;
+    const socket = new WebSocket('ws://localhost:3000');
+
+    socket.onopen = () => {
+      console.log('WebSocket client connected.');
+    };
+
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      const sender = data.sender;
+      const content = data.content;
+      const targetLanguage = data.targetLanguage;
+
+      const message = document.createElement('li');
+      message.textContent = `${sender} (${targetLanguage}): ${content}`;
+      messageList.appendChild(message);
+    };
+
+    socket.onclose = () => {
+      console.log('WebSocket client disconnected.');
+    };
+
+    function sendMessage() {
+      const content = messageInput.value.trim();
+      if (content) {
+        const message = {
+          sender: user,
+          content: content,
+          targetLanguage: userSelect.value === 'US' ? 'es' : 'en' // Translate US to Spanish (es), and vice versa (en)
+        };
+        socket.send(JSON.stringify(message));
+        messageInput.value = '';
+      }
+    }
+
+    sendButton.addEventListener('click', sendMessage);
+
+    messageInput.addEventListener('keyup', (event) => {
+      if (event.key === 'Enter') {
+        sendMessage();
+      }
+    });
+  </script>
+</body>
+</html>
